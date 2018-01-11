@@ -1,0 +1,99 @@
+versity of Iowa
+   
+   Instructor: Cesare Tinelli
+*/
+
+/* Scala examples seen in class */
+
+
+/* Basic types */
+
+3
+
+3 + 5
+
+4 - 2
+
+3.0
+
+1.4 + 3.0
+
+
+// implicit conversion
+
+1.4 + 3   // syntactic sugar for 
+
+1.4 + 3.toDouble
+
+
+"hi"
+
+"hi" ++ " there"
+
+
+// ill-typed
+
+"hi" ++ 3
+
+
+"hi" + " there"
+
+// implicit conversion
+"high " + 5  // syntactic sugar for 
+
+"high " + 5.toString // functionally equivalent to 
+
+"high " ++ "5"
+
+
+
+// implicit conversion and left associativity of +
+
+"hi" + 3.4 + 1  // implicitly converted to 
+
+("hi" + 3.4.toString) + 1.toString
+
+
+3.4 + 1 + "hi" // implicitly converted to
+
+(3.4 + 1.toDouble).toString + "hi"
+
+
+
+true
+
+! true
+
+true && false
+
+true || false
+
+
+3 == 5-2
+
+3 == 3.0 // implictly converted to 
+
+3.toDouble == 3.0
+
+3 == "3" /** no implicity conversion here! **/
+
+
+/* tuple types */
+
+(1,3)
+
+(3,4,5)
+
+(3,"pp",4.3)
+
+((1,2),3) == (1,(2,3))  // tuples of different type
+((1,2),3) == (1,2,3)    // tuples of different type
+
+
+
+/* Unit type */
+
+()
+
+val a = ()
+
