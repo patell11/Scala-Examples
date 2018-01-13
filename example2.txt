@@ -23,6 +23,7 @@ a
 
 /*Issue */
 Issue 1
+Issue 2
 
 a = 4  // error, symbolic values are immutable
 
