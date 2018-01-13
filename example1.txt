@@ -18,6 +18,8 @@ versity of Iowa
 
 1.4 + 3.0
 
+//multiplication 
+5 * 8
 
 // implicit conversion
 
