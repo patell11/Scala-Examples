@@ -21,6 +21,9 @@ hotfix1
 hotfix2
 a
 
+/*Issue */
+Issue 1
+
 a = 4  // error, symbolic values are immutable
 
 
