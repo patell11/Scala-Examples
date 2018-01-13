@@ -10,6 +10,11 @@ versity of Iowa
 /* values and variables */
 
 val a = 3   // declares symbolic value a as a synonym for 3
+val x = 5  // test
+
+/*multiplication */
+5 * 6
+7 * 8
 
 a
 
