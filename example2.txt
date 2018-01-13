@@ -18,6 +18,7 @@ val x = 5  // test
 
 /* hotfix */
 hotfix1
+hotfix2
 a
 
 a = 4  // error, symbolic values are immutable
