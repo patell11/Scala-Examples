@@ -16,6 +16,8 @@ val x = 5  // test
 5 * 6
 7 * 8
 
+/* hotfix */
+hotfix1
 a
 
 a = 4  // error, symbolic values are immutable
