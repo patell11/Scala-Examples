@@ -1,0 +1,41 @@
+
+main
+------
+
+Cows, sheep and deer are all mammals.
+Cows and sheep are domesticated, deer are not.
+No reptiles are domesticated but they are animals like mammals.
+Snakes are examples of reptiles.
+Reptiles lay eggs like birds, mammals do not.
+Birds are animals too but are not reptiles.
+
+[Note that, for simplicity, the domain knowledge above is not accurate with respect to the real world, but that is irrelevant for the exercise.]
+
+Exercise
+--------
+
+Define suitable classes and arrange them in an is-a hierarchy that accurately reflects the knowledge above.
+
+
+Possible solution
+-----------------
+
+Classes: Animal, Egg-laying, Domesticated, Mammal, Reptile,
+         Cow, Sheep, Deer, Snake
+
+Inheritance structure: (< means subclass)
+
+Cow < Mammal
+Sheep < Mammal
+Deer < Mammal
+
+Cow < Domesticated
+Sheep < Domesticated
+
+Snake < Reptile
+
+Mammal < Animal
+Reptile < Animal
+
+Reptile < Egg-laying
+

@@ -1,0 +1,580 @@
+versity of Iowa
+   
+   Instructor: Cesare Tinelli
+*/
+
+/* Formalizing requirements with require, assert and ensure */
+
+/* Scala examples seen in class */
+
+// Recall:
+//
+// The predefined method 'require' takes as input a Boolean value b 
+// It throws the exception IllegalArgumentException if b is false, and
+// has no effect otherwise
+val a = 4
+require(a > 8) // throws IllegalArgumentException
+require(a > 2) // executes silently
+
+// 'require' is useful to check (at runtime) that 
+// a method's input values satisfy certain restrictions
+// It is best put at the beginning of a method's or class' body
+
+
+// Example:
+
+// Given an non-negative integer m and a positive integer n
+// div returns the result of the integer division of m by n
+def div (m: Int, n: Int): Int = {
+  // m must be non-negative
+  require(m >= 0)
+  // n must be positive
+  require(n > 0)
+
+  if (m < n)
+    0
+  else	
+    1 + div(m - n, n)
+}
+
+
+// assert
+//
+// The predefined method 'assert' takes as input a Boolean value b 
+// It throws the exception AssertionError if b is false, and
+// has no effect otherwise
+
+val a = 4
+assert(a > 8) // throws AssertionError
+
+assert(a > 2) // executes silently
+
+// 'assert' can be used anywhere in the code, but it is typically used 
+// before a return point in a method with side effects, 
+// to check that the method's postcondition is satisfied.
+
+object Counter {
+  var c = 0
+
+  def inc = {
+    require(c >= 0) 
+
+    c = c + 1
+
+    assert(c > 0)
+  }
+
+  def dec {
+    require(c >= 0) 
+
+    val c1 = 2*c - 2
+
+    assert(c1 == c - 1)
+    
+
+    c = c1   
+    
+    assert(c >= 0) 
+  }
+}
+
+
+
+Counter.dec // will throw exception
+
+
+// ensuring
+//
+// The predefined method 'ensuring' takes as input a function p
+// from any type to Boolean (a predicate).
+// 'ensuring' is defined for any value v: it evaluates p(v) and 
+// throws the exception AssertionError if p(v) returns false, and
+// returns v otherwise
+
+val p = (x: Int) => x > 0  // returns true iff x is a positive integer
+
+5.ensuring (p) // whole expression evaluates to 5 because p(5) evaluates to true
+
+0.ensuring (p) // throws exception because p(0) evaluates to false
+
+{1; 2} ensuring (x => x == 2) // evaluates to 2
+
+// 'ensuring' can be used anywhere in the code, but it is typically applied 
+// to the body of a method that returns a value,
+// to check that the returned value satisfies some requirement.
+// Example
+
+// div returns non-negative values
+def div (m: Int, n: Int): Int = {
+  if (m < n)
+    0
+  else	
+    1 + div(m - n, n)
+} ensuring (res => res >= 0) // the returned value must be non-negative
+
+
+// Design by contract
+//
+// 'require', 'assert', and 'ensuring' provide (some) support to the 
+// design-by-contract methodology
+// The boolean expression, or *assertion*, given as argument to these
+// three methods should be side-effect free. 
+// One often uses library methods in assertions, under the assumption 
+// that those methods are correct.
+
+// Examples
+
+// Given an integer value x and an integer list l,
+// occurs(x, l) returns true iff x occurs in l.
+
+def occurs(x:Int, l:List[Int]):Boolean = {
+  l match {
+    case Nil => false
+    case h::t => (h == x) || occurs(x,t)
+  } 
+} ensuring { 
+  // the result of occurs must be true iff x is in l
+  r == (l contains x)
+}
+
+
+// For each non-negative integer n, fact(n) returns the factorial of n
+def fact(n: Int): Int = {
+  // n should be non-negative
+  require(n >= 0)
+
+  var i = n
+  var f = 1
+  while (i > 0) {
+    f = f * i
+    i = i - 1
+  }
+  f
+} ensuring { res => 
+  n match {
+    // if n is 0, the returned result should be 1
+    case 0 => res == 1
+    // if n is positive, the returned value should be the same as (n * fact(n-1))
+    case _ => res == n * fact(n - 1) 
+  }
+}
+
+  
+// forall
+//
+// the 'forall' method is predefined for all collection types
+// it applies to any collection c: it takes a predicate p as input
+// and returns true iff every element of c satisfies p
+//
+// Example
+val l = List(1,2,4,5)
+
+l.forall(e => e > 0) // evaluates to true
+// because every element of l satisfies the predicate (e => e > 0)
+
+// forall is handy in expressing properties that must be true
+// for a collection of values
+
+
+// Given an integer array a and an integer i in a's range,
+// min(a,i) returns the position of a's least element among  
+// those stored at or after position i
+def min(a: Array[Int], i:Int) = {  
+  // i must be a legal index
+  require(0 <= i && i < a.size)
+  
+  var m = i
+  for (j <- i to a.length-1)
+    if (a(m) > a(j))  m = j
+  m
+} ensuring { res =>
+  // res is in the right range
+  i <= res && res < a.length &&
+  // each element of a between positions i and the end of a
+  // is at least as big as a(res)
+  (i to a.size - 1).forall(j => a(res) <= a(j))
+}
+
+
+// Expressing even simple requirements accurately as assertions
+// can be tricky
+
+// Given an non-null integer array a,
+// sort(a) sorts the array a in place in non-decreasing order
+def sort(a:Array[Int]) {
+  def swap(i:Int, j:Int) {
+    var t = a(i); a(i) = a(j); a(j) = t
+  }
+  for (i <- 0 to a.length - 1)  
+    swap(i, min(a,i))
+} 
+
+val a1 = Array(2,4,7,5,7,9,0)
+
+sort(a1)
+
+a1
+
+// How to captures sort's contract with require statements
+// (for preconditions) and assert statements (for postconditions)?
+
+// Given an non-null integer array a,
+// sort(a) sorts the array a in place in non-decreasing order
+def sort(a:Array[Int]) {
+	 // a is non-null
+  require(a != null)
+    
+  def swap(i:Int, j:Int) {
+    var t = a(i); a(i) = a(j); a(j) = t
+  }
+  for (i <- 0 to a.length - 1)  
+    swap(i, min(a,i))
+
+  // Attempt 1:
+  assert( (1 to a.size - 1).forall(i => a(i-1) <= a(i)) )
+} 
+
+
+// The assertion 1 above *does not* capture all the requirements on sort.
+// It only states that at the end a is sorted in non-decreasing order
+// The following implementation of sort satisfies Assertion 1!
+
+def sort(a:Array[Int]) {
+  require(a != null)
+  for (i <- 0 to a.size - 1)
+    a(i) = 1
+}
+
+// Assertion 1 is missing the additional, implicit requirement
+// that the final a must be a permutation of the initial one, 
+// that is, contains only values that appeared in the initial a.
+
+// Second attempt:
+
+def sort(a:Array[Int]) {
+  require(a != null)
+
+  // copy of a, needed to be able to talk about the initial a
+  val old_a = a.clone 
+    
+  def swap(i:Int, j:Int) {
+    var t = a(i); a(i) = a(j); a(j) = t
+  }
+  for (i <- 0 to a.length - 1)  
+    swap(i, min(a,i))
+  
+  // Assertion 1
+  assert( (1 to a.size - 1).forall(i => a(i-1) <= a(i)) )
+  // Assertion 2
+  assert( a.toSet == a_old.toSet )
+} 
+
+// Assertion 2 is still not quite right. 
+// It is accurate only if old_a does not contain repeated values.
+// For instance, it would not throw an exception 
+// if old_a equal was Array(2,1,2) and a was Array(1,1,2)
+
+
+
+// Third attempt:
+
+// Each value of the initial a occurs in the final a
+// the same number of times.
+// An accurate set of assertions is provided below.
+
+def sort(a:Array[Int]) {
+  require(a != null)
+  
+  val old_a = a.clone // copy of a
+
+  def swap(i:Int, j:Int) {
+    var t = a(i); a(i) = a(j); a(j) = t
+  }
+  for (i <- 0 to a.length-1)  swap(i, min(a,i))
+  
+  // Assertion 1
+  assert {
+    (1 to a.size - 1).forall { i =>
+    	 a(i-1) <= a(i)
+    }
+  }
+  // Assertion 2'
+  assert {
+    a.forall { e =>
+      a.count(_ == e) == old_a.count(_ == e)
+    }    
+  }
+}
+
+// Assertion 2' states that each element e of a occurs in the final a 
+// the same number of times it occured in the initial a. Together with 
+// the fact that the size of a does not change, this is equivalent to
+// saying that the final a is a permutation of the initial one
+// It uses the predefined 'count' methods for collections, which
+// takes a predicate p as argument and returns the number of elements
+// of the collection that satisfy p.
+
+
+// Recall the sorted queue example, which stores the enqueued elements
+// sorted according to the input comparison function 'better'
+
+
+class SortedQueue[T](better:(T,T) => Boolean) {
+  // invariants:
+ 
+  private var q = List[T]()
+  
+  private def insert(x:T, l:List[T]):List[T] = {
+    l match {
+      case Nil => x :: Nil
+      case h :: t => 
+        if (better(x, h))
+          x :: l
+        else
+          h :: insert(x, t)
+    }
+  }
+    
+  // isEmpty
+  // preconditions: 
+  // postconditions:
+  def isEmpty = q == Nil
+
+  // enqueue
+  // preconditions: 
+  // postconditions: 
+  def enqueue(x:T) = {
+    require(isSorted)
+    
+    q = insert(x, q)
+    
+  }
+    
+  // dequeue
+  // preconditions: 
+ // postconditions: 
+  def dequeue = {
+    
+    val (h::t) = q
+    q = t
+    h
+    
+  }
+  // postcondition for the object constructor
+}
+
+
+
+class SortedQueue[T](better:(T,T) => Boolean) {
+  // invariants:
+  // a) the queue is store in the list field q 
+  // b) q is initially empty
+  // c) q is maintained sorted according to better, that is,
+  //    for all positions i,j in q with i < j,   better(q(i), q(j)) holds
+  //    before and after calling a public method
+
+  private var q = List[T]()
+  
+  // auxiliary field, needed for to be able to state some post conditions
+  private var old_q = List[T]()
+  
+  // internal predicate, to check that q is sorted by better
+  private def isSorted = 
+    (1 to q.size - 1).forall(i => better(q(i-1), q(i)) )  
+
+  private def insert(x:T, l:List[T]):List[T] = {
+    l match {
+      case Nil => x :: Nil
+      case h :: t => 
+        if (better(x, h))
+          x :: l
+        else
+          h :: insert(x, t)
+    }
+  }
+    
+  // isEmpty
+  // postconditions:
+  // - returns true iff q is empty
+  def isEmpty = q == Nil
+
+  // enqueue
+  // preconditions: 
+  // - q is sorted by better
+  // postconditions: 
+  // - q consists of the old q plus x
+  // - q is sorted wrt better
+  def enqueue(x:T) = {
+    require(isSorted)
+    old_q = q  // save current value of q before modifying it
+    
+    q = insert(x, q)
+    
+    // the size of q grows by one
+    
+    
+    // the number of occurrences of x in q grows by one
+    
+    
+    // the number of occurrences of the other elements is unchanged 
+    
+    
+    // the new q is sorted
+    
+  }
+    
+  // dequeue
+  // preconditions: 
+  // - q is non-empty
+  // - q is sorted by better
+ // postconditions: 
+ // - the returned value res is better than anything in q
+ // - q consists of the old q minus res
+ // - q is still sorted wrt better
+
+  def dequeue = {
+    require(!isEmpty)
+    require(isSorted)
+    old_q = q
+    
+    val (h::t) = q
+    q = t
+    h
+    
+  } ensuring { res =>
+    // the returned value is better than all the others
+     
+    // the size of q has decreased by 1
+   
+    // the number of occurrences of res in q has decreased by 1
+    
+    // the number of occurrences of the other elements is unchanged 
+    
+    // the new q is still sorted
+    
+}
+    
+  // postcondition for the object constructor
+  // queue is empty and sorted
+
+}
+
+
+
+
+class SortedQueue[T](better:(T,T) => Boolean) {
+  // invariants:
+  // a) the queue is store in the list field q 
+  // b) q is initially empty
+  // c) q is maintained sorted according to better, that is,
+  //    for all positions i,j in q with i < j,   better(q(i), q(j)) holds
+  //    before and after calling a public method
+
+  private var q = List[T]()
+  
+  // auxiliary field, needed for to be able to state some post conditions
+  private var old_q = List[T]()
+  
+  // internal predicate, to check that q is sorted by better
+  private def isSorted = 
+    (1 to q.size - 1).forall(i => better(q(i-1), q(i)) )  
+
+  private def insert(x:T, l:List[T]):List[T] = {
+    l match {
+      case Nil => x :: Nil
+      case h :: t => 
+        if (better(x, h))
+          x :: l
+        else
+          h :: insert(x, t)
+    }
+  }
+    
+  // isEmpty
+  // postconditions:
+  // - returns true iff q is empty
+  def isEmpty = q == Nil
+
+  // enqueue
+  // preconditions: 
+  // - q is sorted by better
+  // postconditions: 
+  // - q consists of the old q plus x
+  // - q is sorted wrt better
+  def enqueue(x:T) = {
+    require(isSorted)
+    old_q = q  // save current value of q before modifying it
+    
+    q = insert(x, q)
+    
+    // the size of q grows by one
+    assert(q.size == old_q.size + 1)
+    
+    // the number of occurrences of x in q grows by one
+    assert(q.count(_ == x) == old_q.count(_ == x) + 1)
+    
+    // the number of occurrences of the other elements is unchanged 
+    assert((old_q.toSet - x).forall( e => q.count(_ == e) == old_q.count(_ == e)) )
+    
+    // the new q is sorted
+    assert(isSorted)
+  }
+    
+  // dequeue
+  // preconditions: 
+  // - q is non-empty
+  // - q is sorted by better
+ // postconditions: 
+ // - the returned value res is better than anything in q
+ // - q consists of the old q minus res
+ // - q is still sorted wrt better
+
+  def dequeue = {
+    require(!isEmpty)
+    require(isSorted)
+    old_q = q
+    
+    val (h::t) = q
+    q = t
+    h
+    
+  } ensuring { res =>
+    // the returned value is better than all the others
+    q.forall( e => better(res, e) ) && 
+    // the size of q has decreased by 1
+    q.size == old_q.size - 1 &&
+    // the number of occurrences of res in q has decreased by 1
+    q.count(_ == res) == old_q.count(_ == res) - 1 &&
+    // the number of occurrences of the other elements is unchanged 
+    (q.toSet - res).forall( e => q.count(_ == e) == old_q.count(_ == e) ) &&
+    // the new q is still sorted
+    isSorted
+}
+    
+  // postcondition for the object constructor
+  assert(isEmpty && isSorted)
+}
+
+
+
+
+// A challenging example
+//
+// Given an integer x and a list l of integers
+// remove(x, l) ``removes'' all the occurrences of x from l, 
+// that is, returns a list containing (in the same order) all and
+// only the elements of l that differ from x.
+
+def remove(x: Int, l: List[Int]): List[Int] = l match {
+  case Nil => Nil
+  case h::t => if (x == h) remove(x, t) else h::remove(x, t)
+} ensures { res =>
+  // x is not in res
+  !(res contains x) &&
+  // every element of l other than x occurs in res the same number of times
+  (l.toSet - x).forall { e => 
+    res.count(_ == e) == l.count(_ == e)
+  } &&
+  // the order of the remaining elements is unchanged
+  // (rather tricky to express,  especially if l can contain repetitions)
+}

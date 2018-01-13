@@ -1,0 +1,291 @@
+versity of Iowa
+   
+   Instructor: Cesare Tinelli
+*/
+
+/* Scala examples seen in class */
+
+
+
+/* Collections: Lists */
+
+// lists are created similarly to arrays
+val l = List(1, 2, 3)
+
+// Main list methods
+l.head
+l.tail
+l.length
+
+// same element access syntax as with arrays
+l(0)
+
+l(3)
+
+// a list can be built with elements of *any* type, 
+// but all elements must be of the *same* type
+List('a', 'b')
+
+List("hi", "there")
+
+List((1, 2), (1, 4))
+
+List(List(1, 2), List(1, 4))
+
+List(1, "a")   // types as a list of Any
+
+
+val l1 = List(1, 2, 3)
+val l2 = List(1, 2, 3)
+
+// identity
+l1 eq l2   
+
+
+// structural equality
+l1 == l2  
+
+// order and number of occurrences of elements matters for equality
+List(1,2,3) == List(2,1,3)
+
+List(1,2) == List(1,2,2)
+
+
+
+// Empty list, prints as List()
+Nil
+
+// Evaluates to Nil
+List()
+
+Nil eq List()
+
+
+// bad practice, gives you a list of elements of type Nothing.
+val l = List()
+
+// recommended, declare the element type of an empty list explicitly
+val il = List[Int]()
+
+var x = List("a", "b")
+
+// Causes an implicit conversion of 1 and 2 to Long.
+var y = List[Long](1, 2)
+
+
+// if T1 and T2 are different types, 
+// List[T1] is a different type from List[T2] 
+// no implict conversions are defined for them
+x = il
+
+y = il
+
+
+// Lists are built by increasingly adding elements in front 
+// of Nil with the "cons" operator ::
+val x = 6 :: Nil
+
+val y = 5 :: x
+
+// note that x is unchanged
+x
+
+y.tail eq x
+
+// :: is right associative.
+3 :: 4 :: Nil
+// same as 
+3 :: (4 :: Nil)
+
+// List(3,4) can be understood as syntact sugar for
+3 :: (4 :: Nil)
+
+
+
+3 :: 4  // error, right-hand argument not a list
+
+// can mix and match notation
+3 :: List(4)
+
+// note type here
+List(7) :: Nil
+
+
+
+val l = List(1, 2, 3)
+
+// invariant defining head and tail in terms of ::
+// for any non-empty list
+(l.head :: l.tail) == l
+
+
+
+// pattern matching also works with ::
+val h :: t = l
+
+// why it works: l is really 1 :: (2 :: (3 :: Nil))
+val h :: t = 1 :: (2 :: (3 :: Nil))
+
+// deeper patters for lists with at least two elements
+val x1 :: x2 :: t = l
+
+val x1 :: x2 :: x3 :: t = l
+
+val x1 :: x2 :: x3 :: x4 :: t = l // fails because l has < 4 elements
+
+// "List" syntax can also be used for pattern matching
+val List(x1, x2, x3) = l
+
+// fails because l has length 3
+val List(x1) = l
+
+// also fails
+val List(x1, x2) = List("a")
+
+
+
+// recursive definition of length function for lists
+// based on navigating the list structure
+// If l is empty its length is 0. If l is non-empty, 
+// and so has a tail t, its lenght is 1 + the length of t
+def len (l:List[Int]):Int = 
+  l match {
+    case Nil    => 0
+    case _ :: t => 1 + len(t)
+  }
+  
+  
+len(List(1, 1, 1))
+
+// min returns the minimun element of an non-empty integer list,
+// it raises an exception with empty lists
+//
+// if l has only one element n, the minimum is n
+// if l has at least two elements its miminum is the smaller
+// between l's head and the minimun of l's tail.
+def min (l:List[Int]):Int = 
+  l match {
+    case Nil => throw new IllegalArgumentException
+    case n :: Nil => n
+    case n :: t => {
+      val m = min(t)
+      if (n < m) n else m
+    }
+  }
+
+// concat contatenates two lists
+def concat(l:List[Int], m:List[Int]):List[Int] =
+  l match {
+    // when l is empty, its concatenation with m is just m
+    case Nil  => m 
+    // when l has a head h and a tail t, its contatenation with m
+    // is obtained by inserting h in front of the contatenation
+    // of t with m
+    case h :: t => h :: concat(t, m)
+  }
+
+concat(List(1, 2), List(3, 4, 5))
+
+// the effect of concat is achieved with the predefined overloaded operator ++
+List(1,2) ++ List(3,4,5)
+
+// reverse reverses a list
+def reverse (l:List[Int]):List[Int] =
+  l match {
+    // when l is empty it is its own reverse
+    case Nil => l
+    // when l has a head h and a tail t, its reverse is the contatenation
+    // of the reverse of t with a list containing just h
+    case h :: t => { 
+      val rt = reverse(t)
+      val lh = List(h)
+      concat(rt, lh)
+    }
+  }
+
+reverse(List(3, 4, 5))
+
+// more compact version of the implementation above
+// both version are inefficient because each reverse(t) is
+// scanned linearly by concat each time
+def reverse (l:List[Int]):List[Int] =
+  l match {
+    case Nil  => l
+    case h :: t => concat(reverse(t), List(h))
+  }
+  
+// this reverse uses a local auxiliary function rev
+// rev is "tail-recursive", it builds the reverse of l as it scans it
+// by incrementally moving its elements into an initially empty list rl.
+// l is scanned only once
+def reverse (x:List[Int]):List[Int] = {
+
+  def rev (l:List[Int], rl:List[Int]):List[Int] = 
+  l match {
+    // when l has a head h and a tail t, put h in front of rl
+    // and continue with t and h::rl
+    case h :: t => rev(t, h :: rl)
+    // when l is Nil, rl contains by construction the reverse
+    // of the original list
+    case Nil => rl
+  }
+
+  rev(x, Nil)
+} 
+
+
+
+/* Collection types: Arrays */
+
+// creates an array with 5 elements and calls it a
+val a = new Array(5)
+
+// more typically, one specifies the element type as well;
+// the array elements start with a type-dependent default value
+val a = new Array[Double](5)
+
+a[1]  // standard notation *not* used in Scala
+
+a(1)  // Scala's notation for array access
+
+a(0) = 2.5  //  array update
+
+a(5)  // generates out of bound error
+
+// generates an Array[Int] of length 3 and elements 10,11, and 12;
+// element type Int is inferred
+Array(10, 11, 12)
+
+val a = Array(10, 11, 12)
+
+// 3 different ways to generate an Array[Long]
+// from Int initial values
+val a = Array[Long](10, 11, 12)  // preferred one
+
+val a:Array[Long] = Array(10, 11, 12)
+
+val a = Array(10:Long, 11, 12)
+
+
+
+// note the tricky difference
+
+val a = Array[Long](10)  // a is an Array[Long] with one element: 10
+
+val b = new Array[Long](10) // n is an Array[Long] with 10 elements
+
+// array length
+a.length
+
+// multidimentional arrays are arrays of arrays
+val m = new Array[Array[Int]](10)
+
+val m = Array(Array(1, 2, 3),
+              Array(4, 5, 6),
+              Array(7, 8, 9),
+              Array(10, 11, 12))
+
+m(2)(1) // no special syntax for matrix access
+
+
+

@@ -1,0 +1,118 @@
+versity of Iowa
+   
+   Instructor: Cesare Tinelli
+*/
+
+/* Scala examples seen in class */
+
+/* Built-in control structures */  
+
+/* for loops */
+
+// The for loop is an expression of type Unit
+// It can be seen as a mixfix operator with two arguments:
+//
+//   for (_) _ 
+//
+// The second argument (the "body") is any expression.
+// The first argument is a sequence of one or more *generators*
+//
+// A generator is an expression of the form  _ <- _ where the first
+// argument is a pattern and the second is an expression of a collection
+// type (Range, List, Array, ...)
+
+// below, the pattern 3 is matched against each element of the list.
+// each time there is a match, the body of for is evaluated
+for (3 <- List(1,3,4,3,5,3,6,3))  println("Hi")
+
+// as in the match and val constructs, patterns can contain variables 
+for (i <- List(1,2,14,52,7,10)) println("high five")
+
+// any variables in the pattern have local scope within the for
+for (i <- List(1,2,14,52,7,10)) println("i = " + i)
+
+i // gives an error
+
+
+// patterns in a generator can be arbitrarily complex, depending 
+// on the type of the collection
+val l = List((1,2), (1,4), (6,7), (3,6))
+
+for ( (i, j) <- l )  println("i = " + i + ", j = " + j)  
+
+for ( (i, _) <- l )  println(i) // ignores the second component of each pair
+
+for ( (1, j) <- l )  println(j) // only matches pairs starting with 1
+
+
+// *any collection* type can be used in a generator
+for (i <- Array(1.2, 2.5, 4.5, 7.1)) println("i = " + i)
+
+for (i <- Set(1,2,4,5,7,10,4)) println("i = " + i)
+
+// even strings, which are seen as the collection of their characters
+for (i <- "abcd") println("i = " + i)
+
+// ranges are sequences of consecutive integers
+val r = Range(1,5) // contains values 1, 2, 3, 4
+
+for (i <- r) println("i = " + i)
+
+// Expression   1 to 4   is the same as Range(1,5)
+for (i <- 1 to 4) println("i = " + i)
+
+
+// Putting more than one generator has the effect of nested for loops 
+for (i <- 1 to 2; j <- 1 to 3) println("i = " + i + ", j = " + j)
+
+// the above for has the same effect as
+for (i <- 1 to 2) {
+  for (j <- 1 to 3) println("i = " + i + ", j = " + j)
+}
+
+// and it can also be written as
+for {
+  i <- 1 to 2
+  j <- 1 to 3
+} println("i =" + i + ", j = " + j)
+
+
+// a generator can be optionally followed by a *filter* of the form: if b
+// where b is a Boolean expression.
+// the matched value is used if and only if b evaluates to true
+for (i <- List(1,9,2,4,5,7,10) if i > 4) println("i = " + i)
+
+val l = List((1,2), (1,4), (6,7), (3,6))
+
+for ( (i,j) <- l if j == 2*i )
+  println((i,j))
+
+
+for {
+  c1 <- "hi"
+  c2 <- "fifi"
+  if c1 == c2
+} println("character match found for letter " + c1)
+
+
+// BTW, matching filters can be used with the match construct too
+val l = List(2, 1, 3)
+
+l match {
+	case x :: y :: t if (x > y) =>  y :: x :: t
+	case _  =>  l
+}
+// the first case applies only if l has at least two elements *and*
+// its first element is greater than the second
+
+
+// this version of reverse scans the input list x using 
+// a for loop instead of a recursive call,
+// each element of x is inserted into an initialy empty list;
+// a mutable variable is necessary to store the growing reversed list
+// 
+def reverse(x:List[Int]):List[Int] = {
+  var l = List[Int]()
+  for (h <- x)  l = h :: l
+  l
+}

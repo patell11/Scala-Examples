@@ -1,0 +1,282 @@
+versity of Iowa
+   
+   Instructor: Cesare Tinelli
+*/
+
+/* Scala examples seen in class */
+
+
+
+/* Parametric polymorphism: making functions generic in their type */
+
+// The method below takes a list of integers and returns its length
+def len (l:List[Int]):Int = 
+  l match {
+    case Nil    => 0
+    case _ :: t => 1 + len(t)
+  }
+
+// There is nothing in the definition above that is specific to integers,
+// other than the declaration of l's type. 
+// Computing the length of a list of strings is done in exactly the same way:
+def len (l:List[String]):Int = 
+  l match {
+    case Nil    => 0
+    case _ :: t => 1 + len(t)
+  }
+
+  
+// We can generalize the two definitions above by parametrizing not just
+// the input list l but also the type of its elements
+def len[T] (l:List[T]):Int = 
+  l match {
+    case Nil    => 0
+    case _ :: t => 1 + len(t)
+  }
+
+// The type parameters are listed in square brackets after the method name
+// and can be used in the type declarations within the method.
+
+// In the definition above, T is the (only) type parameter, standing for any Scala type.
+// The definition effectively defines a *family* of length functions, one for 
+// each type T:  len[Int], len[String], len[(Int,Int)], len[Array[Int]],...
+
+len[Int]( List(1, 2, 3) )
+
+len[String]( List("a", "b") )
+
+len[(Int,Int)]( List((1,2), (3,4)) )
+
+len[Array[Int]]( List(Array(1,2), Array(3,4)) )
+
+// In most cases, the type annotation for len can be dropped, Scala will figure
+// out the right version of the method automatically
+
+len( List(1, 2, 3) )
+
+len( List("a", "b") )
+
+len( List((1,2), (3,4)) )
+
+len( List(Array(1,2), Array(3,4)) )
+
+// The method len exibits *parametric polymorphism*, it generically stands for 
+// (infinitely-)many length methods differing only for the type of the elements
+// in the list input.   
+// The type of len is   [T](l: List[T])Int
+// which means that, for any type T, len takes a list of elements of type T
+// and returns an integer
+
+
+// How is this definition of len
+ def len[T] (l:List[T]):Int = 
+  l match {
+    case Nil    => 0
+    case _ :: t => 1 + len(t)
+  }
+
+// different from this one?
+def len (l:List[Any]):Int = 
+  l match {
+    case Nil    => 0
+    case _ :: t => 1 + len(t)
+  }
+
+
+// All the methods below can be made generic by parametrizing the type 
+// of the list elements, because none of them do anything type-specific
+// to these elements
+  
+def concat(l:List[Int], m:List[Int]):List[Int] =
+  l match {
+    case Nil  => m 
+    case h :: t => h :: concat(t, m)
+  }
+  
+def reverse(x:List[Int]):List[Int] = {
+  def rev(l:List[Int], rl:List[Int]):List[Int] = 
+  l match {
+    case h :: t => rev(t, h :: rl)
+    case Nil => rl
+  }
+  rev(x, Nil)
+}      
+
+def remove( x:Int, l:List[Int] ): List[Int] =
+  l match {
+    case Nil => Nil
+    case y :: t => if (x == y) remove(x, t) else y :: remove(x, t)
+  }
+
+  
+// Generic versions of contact, reverse, and filter
+// Their type is in comments
+
+// concat: [T](l: List[T], m: List[T]) List[T]
+def concat[T](l:List[T], m:List[T]):List[T] =
+  l match {
+    case Nil  => m 
+    case h :: t => h :: concat(t, m)
+  }
+  
+// reverse: [T](x: List[T]) List[T]
+def reverse[T](x:List[T]):List[T] = {
+  def rev(l:List[T], rl:List[T]):List[T] = 
+  l match {
+    case h :: t => rev(t, h :: rl)
+    case Nil => rl
+  }
+  rev(x, Nil)
+}      
+
+// filter: [T](x:T, l: List[T]) List[T]
+def remove[T]( x:T, l:List[T] ): List[T] =
+  l match {
+    case Nil => Nil
+    case y :: t => if (x == y) remove(x, t) else y :: remove(x, t)
+  }
+
+/* More examples of generic methods */
+
+// creates a set consisting of the values in the input list
+// toSet: [A](l: List[A]) scala.collection.immutable.Set[A]
+def toSet[A](l:List[A]):Set[A] = 
+  l match {
+    case Nil => Set[A]()
+    case h :: t => toSet(t) + h 
+  }
+
+toSet(List(1,4,2,1,4))
+
+toSet(List("a","b","b","a","c"))
+
+
+
+// creates a list consisting of n copies of x (assuming n >= 0)
+// rep: [A](x: A, n: Int)List[A]
+def rep[A](x:A, n:Int):List[A] = 
+  n match {
+    case 0 => Nil
+    case _ => x :: rep(x, n - 1)
+  }
+
+rep(3.4, 3)
+
+rep("Are we there yet?", 3)
+
+
+// produces a triple
+//toTriple: [A, B, C](x: A, y: B, z: C) (A, B, C)
+def toTriple[A,B,C](x:A, y:B, z:C) = (x,y,z)
+
+toTriple(3, "s", 5.4)
+
+toTriple(3, 4, 5)
+
+
+// the next two generic methods are ill defined because not all types T
+// have a > or a + method
+def greater[T](x:T, y:T) =  x > y // gives error
+
+def plus[T](x:T) =  1 + x // gives error
+
+// However, the following two methods are OK because all types in Scala have 
+// a method == and toString
+// distinct: [T](x: T, y: T) Boolean
+def distinct[T](x:T, y:T) =  !(x == y)
+
+
+distinct("a", "a") // T is inferred to be String
+distinct(1, 2)     // T is inferred to be Int
+distinct(1, 2.0)   // T is inferred to be Double (with 1 inplicitly upcast to Double)
+distinct(1, "a")   // T is inferred to be Any    (with 1 and "a" inplicitly upcast to Any)
+
+// concat: [T](x: T, y: T) String
+def concat[T](x:T, y:T) =  x.toString ++ " " ++ y.toString
+
+concat("a", "b") 
+concat(1, 2)     
+concat(1, 2.0)   // (*)
+concat(1, "a")   // (**)
+
+// (*) since the arguments have to be of the same type,
+//     1 is implicitly converted to the Double 1.0
+// (**) both 1 and "a" are upcast to type Any
+
+
+// Concat can be generalized further. 
+def concat2[S,T](x:S, y:T) =  x.toString ++ " " ++ y.toString
+
+// But notice its different behavior with 
+concat2(1, 2.0)   
+
+
+
+
+/* Generic Classes */
+
+// Whole classes can be made generic too by type parametrization,
+
+// The class below defines mutable stacks of integers, with usual operations on them
+// It uses a list internally to implement the stack. 
+// The list is stored in a private mutable field
+class Stack {
+  private var s = List[Int]()  // stack is initially empty 
+  
+  def push(x:Int) =  
+    s = x :: s
+    
+  def pop = {
+    val (h :: t) = s
+    s = t
+    h
+  }
+    
+  def isEmpty =  s == Nil
+}
+
+
+
+val st = new Stack
+ 
+st.push(1)
+st.push(2)
+st.pop
+
+
+// Generic version, parametric in the stack element type
+// Type parameters follow the class name, similarly to generic methods
+
+class Stack[T] {
+  private var s = List[T]()  // stack is initially empty 
+
+  // note that Stack's methods are not themselves parametric
+  def push(x:T) =  
+    s = x :: s
+    
+  def pop = {
+    val (h :: t) = s
+    s = t
+    h
+  }
+  
+  def isEmpty =  s == Nil
+}
+
+
+// creates a string stack
+val ss = new Stack[String]
+
+ss push("a")
+ss.push("b")
+ss.pop
+
+// creates a string/int pair stack
+val sis = new Stack[(String,Int)]
+
+sis.push(("a",1))
+sis.push(("b",2))
+sis.pop
+
+// gives an error, because stack has only one type parameter, not two
+val sis = new Stack[String,Int]

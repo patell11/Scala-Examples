@@ -1,0 +1,376 @@
+versity of Iowa
+   
+   Instructor: Cesare Tinelli
+*/
+
+/* Classes and class instances */
+
+
+
+/* User defined classes */
+
+// One can defined new classes with the construct of the form 
+//
+//  class Name(a1,...,an) { ... }
+//
+// where Name is an identifier for the class,
+// a1, ..., an for n >= 0  are any values
+// { ... } is the "body" of the class definition
+
+
+class A() {}  
+
+// equivalently:
+class A {}
+
+// or even
+class A
+
+
+
+// Every class C defines a type C
+// Each element of a class C, which we call an object, 
+// is a value of type C
+
+// objects are created with the construct (new _)
+
+new A
+
+
+val a1 = new A
+
+val a2 = new A
+
+a1 == a2
+
+
+// The body of a class declaration is a block and
+// can contain anything allowed in a block
+// Any declarations within the body have only local scope in there
+
+class B {
+  var x = 1         
+  val s = "abc"
+
+  def m(n: Int) = x + n
+}
+
+// variables in a class are also called "fields"
+
+// class fields and methods can be accessed with 
+// the common dot notation
+
+val b = new B
+
+b.x
+
+b.s
+
+b.m(10)
+
+b.x = 7
+
+b.m(10)
+
+// Whatever expressions are in a class' body they will are
+// evaluated at object creation time
+// The result value of the body is the new object
+class B {
+  println("Starting creating new object of class B")
+  var x = 1         
+  val s = "abc"
+
+  def m(n: Int) = x + n
+
+  def g = 33  // parameterless methods
+	
+  println("Done creating new object of class B")
+}
+
+new B
+
+
+
+/* Operational difference between fields and 
+   parameterless methods
+*/
+
+// The value of an object's field is determined at object
+// creation time. In contrast, a parameterless method is 
+// still a method, so its returned value is computed 
+// anew each time the method is called.
+
+class A {
+  var x = 0
+  val y = x + 1  // y will be initialized to 1 and stay so
+  def f = x + 1  // the value returned by f each time depends
+                 // on the current value of x
+}
+
+val a = new A
+
+a.x
+a.y  // evaluates to 1
+a.f  // evaluates to 1
+
+a.x = 4
+
+a.y  // still evaluates to 1
+a.f  // evaluates to 5
+
+
+// A class declaration can have input parameters
+class Point(x0:Double, y0:Double) {
+  val x = x0
+  val y = y0
+}
+
+val p = new Point(4.5, 3.9)
+
+p.x
+
+p.y
+
+// input parameters are used only at object creation time
+
+p.x0   // error
+
+// but they can turned into fields as in the example below
+
+class Point(val x:Double, val y:Double) {}
+
+// x, y are both input parameters and (immutable) fields
+
+val p = new Point(6.5, 3.1)
+
+p.x
+
+p.y
+
+// "class Point(val x:Double, val y:Double) {}" is just 
+// an abbreviation for a declaration of the form
+class Point(x0:Double, y0:Double) {
+  val x = x0
+  val y = y0
+}
+
+
+
+
+// Fields and methods are exposed by default: they are "public"
+// They can be hidden inside by declaring then as "private"
+// private fields and methods are visible only by objects of the same class
+class Point(x0:Double, y0:Double) {
+  private val x = x0
+  private val y = y0
+
+  def coincidesWith (other: Point) =
+    (x == other.x) && (y == other.y)
+    // other.x and other.y are visible by current point
+}
+
+
+
+val p1 = new Point(6.5, 3.1)
+
+p1.x  //  error
+
+val p2 = new Point(6.5, 3.1)
+
+p1.coincidesWith(p2)
+
+p1 == p2
+
+// note less verbose alternative notation
+p1 coincidesWith p2
+
+
+// more abbreviations:
+class Point(private val x:Double, private val y:Double) {
+}
+// abbreviates something like
+class Point(x0:Double, y0:Double) {
+  private val x = x0
+  private val y = y0
+}
+
+
+
+// inside a class method definition the object that receives the calls
+// can be referred to by 'this'
+class Point(private val x:Double, private val y:Double) {
+
+  def coincidesWith (other:Point) =
+    (this.x == other.x) && (y == other.y)
+    // 'this.x' is the same as just x 
+
+  def sameAs (other:Point) =
+    this eq other
+}
+
+val p1 = new Point(6.5, 3.1)
+val p2 = new Point(6.5, 3.1)
+
+p1 sameAs p2
+
+p1 sameAs p1
+
+val p3 = p1
+
+p1 sameAs p3
+
+
+// 'this' can be used also to define alternative object constructors
+
+class Point(val x:Double, val y:Double) {
+
+  // new object constructor, taking only one parameter
+  def this(x: Double) = 
+    this(x, x) // call to basic constructor, implicitly defined 
+               // by parameters (x0:Double, y0:Double) above
+
+  // another constructor, taking no parameters
+  def this() = 
+    this(0.0)  // call to unary constructor above
+}
+
+val p1 = new Point(4.1, 5.9)
+
+val p2 = new Point(1.7)
+
+val p3 = new Point
+
+p2.x
+p2.y
+
+p3.x
+p3.y
+
+
+// methods called 'apply' can be called with shorthand syntax 
+class Point(private val x:Double, private val y:Double) {
+  
+  def apply(i:Int) =
+    i match {
+      case 0 => x
+      case 1 => y
+      case _ => throw new IllegalArgumentException
+  }
+}
+
+val p = new Point(4.6, 9.1)
+
+p.apply(0) 
+// can be abbreviated as
+p(0)
+
+
+// operator symbols like +, -, ++, *, **, etc. can be used 
+// as method names in user-defined classes
+class Point(private val x:Double, private val y:Double) {
+  def +(other: Point) = 
+    new Point(x + other.x, y + other.y)
+
+  def -(other: Point) = 
+    new Point(x - other.x, y - other.y)
+
+  def apply(i:Int) =
+    i match {
+      case 0 => x
+      case 1 => y
+      case _ => throw new IllegalArgumentException
+  }
+}
+
+val p1 = new Point(4.0, 9.0)
+val p2 = new Point(3.0, 1.0)
+
+val p = p1.+(p2)
+
+p(0) 
+p(1)
+
+// leaner syntax
+
+p1 + p2
+
+// user-defined binary operators are left-associative by default
+p1 - p2 - p2
+// same as
+(p1 - p2) - p2
+
+
+
+// Scala is pervasively object-oriented
+// *every value* is an object of some class
+
+// All basic types (Boolean, Int, Double, Unit, ...) are classes
+// Their elements are objects with predefined methods
+
+// Basic operators are actually all methods
+// E.g.
+
+val x = 4
+
+// as with user defined classes x + 2   is syntactic sugar for 
+
+x.+(2)
+
+// i.e. + is a method of class Int that takes an integer
+// (the second operand of +) and returns its addition with
+// the receiving object (the first operand)
+
+// 3.2 - 1.7   is  syntactic sugar for
+
+3.2.-(1.7)
+
+// true && false  is syntactic sugar for  
+
+true.&&(false)
+
+// x == 3   is syntactic sugar for
+
+x.==(3)
+
+
+// Tuples, Lists, Arrays types are also all classes
+
+val l = List(10, 11, 12)
+// l is an object 
+// l ++ l   is syntactic sugar for
+
+l.++(l)
+
+
+//  9 :: l  is syntactic sugar for 
+
+l.::(9)   
+
+// note the opposite order of the arguments 
+// :: is a List method, not an Int method 
+
+// any predefined or user-defined binary operator starting with ':'
+// is treated as a method of its _second_ argument as above
+
+
+// l(1)  is syntactic sugar for
+
+l.apply(1)
+
+// head, tail, length are all parameterless methods
+
+l.head
+
+l.tail
+
+l.length
+
+
+// All tuple types (e.g., (Int, String) ) are classes 
+val p = (100, "abc")
+
+// _1 and _2 are methods of the (Int, String) class
+
+p._1
+
+p._2

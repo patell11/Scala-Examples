@@ -1,0 +1,289 @@
+versity of Iowa
+   
+   Instructor: Cesare Tinelli
+*/
+
+/* Single Inheritance in Scala */
+
+// require
+//
+// The predefined method 'require' takes as input a Boolean value b 
+// It throws the exception IllegalArgumentException if b is false, and
+// just returns () otherwise
+val a = 4
+require(a > 8) // throws IllegalArgumentException
+require(a > 2) // evaluates to ()
+
+// 'require' is useful to check (at runtime) that 
+// a method's input values satisfy certain restrictions
+// It is best put at the beginning of a method's or class' body
+// With classes, it is executed at object creation time
+
+
+/* Subclassing and inheritance */
+
+import scala.math  // importing the math package
+
+// Class Point models points on a Cartesian plane
+// Fields x and y store the Cartesian coordinates of the point
+class Point(val x:Double, val y:Double) {
+
+  // returns straight-line distance from other point
+  def distanceFrom(other:Point) = {
+    val a = x - other.x
+    val b = y - other.y
+    math.sqrt(a*a + b*b) 
+  }
+
+  // returns true iff this and the other point
+  // have the same coordinates
+  def coincidesWith(other:Point) =
+    x == other.x && y == other.y 
+}
+
+val p1 = new Point(0, 0)
+// note implicit conversion of integer arguments to Double
+val p2 = new Point(2, 1)
+val p3 = new Point(3, 0)
+
+
+// Class Segment models segment on a plane
+// Fields start and end represent the segment's endpoints
+class Segment(val start: Point, val end: Point) {
+  // Initialization requirements:
+  // - start and end should not coincide
+  require(!(start coincidesWith end))
+  
+  // Field length stores the length of the segment
+  // Since the segment is immutable, the length can be computed
+  // once and for all at object creation time
+  val length = start distanceFrom end 
+
+  // Field slope stores a Double pair (n,d) where n/d is 
+  // the slope of this Segmentment
+  private val slope = (end.y - start.y, end.x - start.x)
+   
+  // returns the distance of input point p to this segment
+  def distanceFrom(p:Point) = {
+    val x0 = p.x;      val y0 = p.y
+    val x1 = start.x;  val y1 = start.y
+    val x2 = end.x;    val y2 = end.y
+    val n = math.abs((x2 - x1) * (y1 - y0) - (x1 - x0) * (y2 - y1))
+    val d = math.sqrt(math.pow(x2 - x1, 2) + math.pow(y2 - y1, 2))
+    n / d
+  }
+  
+  // returns true iff this segment's end point coincides
+  // with the other segment's start point
+  def consecutiveWith (other:Segment) =
+    end coincidesWith other.start
+
+  // returns true iff this and the other segment are parallel
+  def parallelWith (other:Segment) = {
+    val (n1, d1) = slope
+    val (n2, d2) = other.slope
+    n1 * d2 == n2 * d1  // evaluates to true iff this and other have the same slope 
+  }
+  
+  // returns true iff this and the other segment are perpendicular
+  def perpendicularWith (other:Segment) = {
+    val (n1, d1) = slope
+    val (n2, d2) = other.slope
+    n1 * n2 == -d2 * d1 // evaluates to true iff this and other have orthogonal slopes
+  }
+}
+
+
+// Abstract class Polygon models polygons
+// Field sides stores a list of segments that are
+// the sides of the Polygon.
+abstract class Polygon(val sides:List[Segment]) { 
+  // Initialization requirements:
+  // - The sides list must contain at least three segments
+  require( sides.length > 2 )
+  
+  // - the segments in sides must be consecutive 
+  require( consecutive(sides) )
+
+  // - the end point of the last segment must coincide 
+  // - with the start point of the first
+  require( sides.last.end == sides.head.start )
+  
+  protected def consecutive(l:List[Segment]):Boolean =
+    l match {
+      case s1 :: s2 :: t =>
+        s1.end == s2.start  &&  consecutive(l.tail) 
+    	 case _ => true
+    }
+  
+	 protected def len (l: List[Segment], n:Double):Double =
+    l match {
+      case Nil => n
+      case s :: t => len(t, s.length + n)
+  }
+  // returns the perimeter of this polygon
+  val perimeter = len(sides, 0.0)
+}
+
+
+val seg1 = new Segment(p1,p2)
+val seg2 = new Segment(p2,p3)
+val seg3 = new Segment(p3,p1)
+
+val pol = new Polygon(List(seg1,seg2,seg3))  // error, can't create instances of abstract classes
+
+// Class Triangle models triangles as polygons with three sides
+class Triangle (s1:Segment, s2:Segment, s3:Segment) extends
+      Polygon(List(s1,s2,s3)) {}
+
+
+val t1 = new Triangle(seg1,seg3,seg2) // error, segments are not consecutive 
+
+val t1 = new Triangle(seg1,seg2,seg3)
+
+// Class Quadrangle models quadrangles as polygons with 4 sides
+class Quadrangle(s1:Segment, s2:Segment, s3:Segment, s4:Segment) extends 
+      Polygon (List(s1,s2,s3,s4)) {}
+
+// Class Parallelogram models parallelograns as special Quadrangles 
+// It adds additional features which are well defined for parallelogram
+// but not for arbitrary polygons
+class Parallelogram(s1:Segment, s2:Segment, s3:Segment, s4:Segment) extends
+      Quadrangle (s1, s2, s3, s4) {
+  // Initialization requirements:
+  // - non-consecutive sides are parallel
+  require( s1 parallelWith s3 )
+  require( s2 parallelWith s4 )
+  
+  val width = s1.length
+  val height = s1 distanceFrom s2.end
+  val area = height * width
+}
+
+
+val p1 = new Point(1,0)
+val p2 = new Point(5,0)
+val p3 = new Point(6,4)
+val p4 = new Point(2,4)
+val p5 = new Point(2,5)
+
+val seg1 = new Segment(p1, p2)
+val seg2 = new Segment(p2, p3)
+val seg3 = new Segment(p3, p4)
+val seg4 = new Segment(p4, p1)
+
+val seg5 = new Segment(p3, p5)
+val seg6 = new Segment(p5, p1)
+
+val par = new Parallelogram(seg1, seg2, seg3, seg4)
+
+val par = new Parallelogram(seg1, seg2, seg5, seg6) // gives error, not a parallelogram
+
+val par = new Quadrangle(seg1, seg2, seg5, seg6) // ok as a quadrangle
+
+// Class Rectangle models rectangles as special parallelograms
+// It overrides the initialization of some of the inherited fields
+// with a more efficient one
+// Note, however, that the new initialization still respects the meaning
+// of those fields (e.g., the field perimeter is still storing the
+// value of the perimeter, not something else)
+class Rectangle (s1:Segment, s2:Segment, s3:Segment, s4:Segment) extends
+      Parallelogram(s1, s2, s3, s4) {
+  // Initialization requirements:
+  // - the first two sides must be perpendicular
+  require( s1 perpendicularWith s2 )
+
+  override val height = s1.length
+  override val width = s2.length
+  override val perimeter = 2 * (height + width)
+}
+
+
+val p1 = new Point(1,0)
+val p2 = new Point(6,0)
+val p3 = new Point(6,4)
+val p4 = new Point(1,4)
+
+val seg1 = new Segment(p1, p2)
+val seg2 = new Segment(p2, p3)
+val seg3 = new Segment(p3, p4)
+val seg4 = new Segment(p4, p1)
+
+val rec = new Rectangle(seg1, seg2, seg3, seg4)
+
+// Class Square models squares as special rectangles
+// It It adds a new field, side, and provides a square-specific
+// initialization of perimeter and area which again does not
+// change their meaning though
+class Square (s1:Segment, s2:Segment, s3:Segment, s4:Segment) extends 
+      Rectangle(s1, s2, s3, s4) {
+  // Initialization requirements:
+  // - the first two sides must have the same length
+  require( s1.length == s2.length )
+
+  val side = s1.length
+  override val perimeter = 4 * side
+  override val area = side * side
+}
+
+val rec = new Square(seg1, seg2, seg3, seg4) //error with previous segments
+
+val p1 = new Point(1,0)
+val p2 = new Point(5,0)
+val p3 = new Point(5,4)
+val p4 = new Point(1,4)
+
+val seg1 = new Segment(p1, p2)
+val seg2 = new Segment(p2, p3)
+val seg3 = new Segment(p3, p4)
+val seg4 = new Segment(p4, p1)
+
+val rec = new Square(seg1, seg2, seg3, seg4)
+
+
+
+
+/* Subtype polymorphism and dynamic binding */
+
+class A {
+  def f = println("f says: ``I'm f from A''")
+  def g = {println("g says: ``I'm g from A, calling f''"); f}
+}
+
+val a = new A
+
+a.f // will call method f from class A
+
+a.g
+
+class AA extends A {
+  override def f = println("f says: ``I'm f from AA''")
+}
+
+val aa = new AA
+
+aa.f  // will call method f from AA 
+aa.g  // will call method g from A, which will then call f from _AA_
+
+
+val a1:A = new AA // a1 has static type A, but dynamic type AA
+
+a1.f // still calling f from AA!
+
+
+class AB extends A {}
+
+
+val ab = new AB
+
+ab.f  // calls f from A because it was not redefined in AB
+
+
+class AAA extends AA {
+  override def f = println("f says:I'm f from AAA")
+}
+
+
+val aaa: A = new AAA
+
+aaa.g // most recent overriding is the one that matters

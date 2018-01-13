@@ -1,0 +1,441 @@
+versity of Iowa
+   
+   Instructor: Cesare Tinelli
+*/
+
+
+/* Scala examples seen in class */
+
+
+/* values and variables */
+
+val a = 3   // declares symbolic value a as a synonym for 3
+
+a
+
+a = 4  // error, symbolic values are immutable
+
+
+var b = 4  // declares a variable b
+
+b = 0  // variables are mutable
+
+
+/* Type ascription */
+
+val a:Int = 4
+
+val a:Float = 4
+
+// String is a short name for the type java.lang.String
+val a:String = "abc"  
+
+val a:String = 3 // type error
+
+3:Int
+
+(3:Int) + 1
+
+3:Long  // implicitly converted to 
+
+(3.toLong):Long
+
+(3:Long) + 1 // implicitly converted to 
+
+((3.toLong):Long) + 1.toLong
+
+3:String  // failed implict conversion, type error
+
+
+/* methods */
+
+
+// methods with automatically inferred return type
+def f1 (n:Int) = n + 1
+
+val a = 3
+
+f1(a)
+
+def f2 (n:Int) = n + 1.5
+
+
+f2(3)
+
+// method with return type Unit
+def f4 (n:Int) = println("Input value was " + n)
+
+// alternative syntax for Unit returning method
+def f4 (n:Int) {
+  println("Input value was " n)
+}
+
+
+def max (x:Int, y:Int) = if (x > y) x else y 
+  
+// parsed incorrectly
+// if statement must be in a single line or 
+// enclosed in a block (see later)
+def max (x:Int, y:Int) = 
+  if (x > y) 
+    x 
+  else 
+    y 
+
+// correct version
+def max (x:Int, y:Int) = {
+  if (x > y) 
+    x 
+  else 
+    y 
+}
+    
+    
+
+var c = 3
+
+// The if construct is an expression.
+// It can be seen as a mixfix operator with three arguments:
+//
+//   if (_) _ else _
+//
+// The first argument must be of type Boolean.
+// The second and third argument must be of the same type.
+// The type of an if expression is determined by the type of its
+// second and third arguments
+//
+val k = if (c > 0) 1 else 0
+
+
+
+// if expressions can go everywhere an expression of can go
+(if (c > 0) 1 else 0) + 7
+
+
+
+// if the left and right branches are not of the same type
+// they are implicitly converted the their closest common supertype
+// (roughly speaking)
+if (true) 1 else 2.0
+
+if (true) 1 else "f"
+
+
+/* expressions with side effects */
+
+// assignments are also expressions ... 
+c = 4
+
+// ... of type Unit
+:type (c = 4)
+
+val w = (c = 0)
+
+// looks a lot like Jave code but it is an expression
+// (of type Unit)
+if (c > 0)  c = c + 1  else  c = c - 1
+
+
+
+/* sequential composition of expressions */
+
+// expressions can be composed and made into a block
+{3; 4}
+
+// block evaluates to and has the type of its last expression 
+// in the sequence
+
+// a new line separator can be used instead of ;
+{ 3
+  4
+}
+
+
+// zero or more espressions can be composed
+{}  // of type unit
+
+{3}
+
+{3; 4; "a"}
+
+// blocks are expressions and so can be nested
+{{3; 4}; 5}
+
+{3; {4; 5}}
+
+// composition is most useful with expressions with side effect,
+// such as assignments
+{c = 40; c}  // changes c and returns its value
+
+
+
+val x1 = {c = 42; 2}  // x1 is an Int
+
+c
+
+val x2 = {2; c = 41} // x2 is a Unit
+
+c
+
+// since blocks are expressions, they can be used as arguments
+// in method calls (not recommended for clarity though)
+f1({c = 3; 2})
+
+c
+
+
+// while statements are also expressions, of type Unit
+// While can be seen a mixfix operator with two arguments: 
+//
+//    while (_) _
+//
+// the first argument takes an expression of type bool
+// the second takes any expression
+var j = 10
+
+while (j > 0)  j = j - 1
+
+
+val u = while (j > 0)  j = j - 1
+
+// the second argument of while can be a block
+while (j > 0) { 
+	println(j)
+ 	j = j - 1
+}  
+
+// a block of two expressions, both of type Unit
+{
+	j = 5
+	while (j > 0) { 
+ 	 println(j)
+ 	 j = j - 1
+	}
+}
+
+// The body of a method can be a block
+def print_range(m:Int, n:Int) = {
+  var i = m
+  println()
+  while (i <= n) {
+    print(i + " ")
+    i = i + 1
+  }
+  println()
+}
+
+print_range(4,9)
+
+
+// imperative-style definition of factorial function
+def fact (n:Int) = {
+  var i = n
+  var f = 1
+  while (i > 0) {
+    f = f * i
+    i = i - 1
+  }
+  f
+}
+
+// functional style, recursive definition of factorial
+def rfact (n:Int) = if (n <= 1) 1 else n * rfact(n-1)
+
+
+
+// declaring the return type of recursive methods is mandatory
+def rfact (n:Int):Int = {
+ if (n <= 1) 
+  1 
+ else 
+  n * rfact(n-1)
+}
+
+
+/* static scoping rules */
+
+val a = 10
+
+def f (x:Int) = a + x
+
+f(4)
+
+// *new* immutable variable a, distinct from the previous one 
+val a = 100
+
+// the new a shadows the old one
+a
+
+// however, the old one is unchanged
+f(4)
+
+
+
+// variable k1 is visible only in the block in whick it is declared
+
+{val k1 = 4;
+ fact(k1)
+}
+
+k1 // error
+
+
+// local declarations shadow less local ones
+val k = 1
+{val k = 2;
+  {val k = 3
+   println(k)
+  }
+ println(k) 
+}
+println(k) 
+
+// method definitions can have local scope too
+{def h(x:Int) = x + 1
+ h(9)
+}
+
+h(9)  // error
+
+// this implies that methods can be defined locally 
+// within other methods
+
+def f (x:Int) = {
+ def square (x:Int) = x * x
+ def double (x:Int) = x + x
+ 
+ square(x) - double(x)
+}
+
+
+
+/* Pattern matching */
+
+val t = (3,5,2)
+
+// declare three new variables x1,x2,x3
+// the value of xi is the value of t's i-th component
+// the pattern (x1,x2,x3) is matched against (3,5,2)
+val (x1,x2,x3) = t
+
+// _ is for "don't care" positions
+val (y1,y2,_) = t
+
+// pattern matching can be used with nested patterns
+val t = ((2,3),5,(6,2))
+
+val (_, x, _) = t
+val (_, _, (x,_)) = t
+
+
+// patterns are extremely useful with the 
+//
+//    (_ match {case _ => _ ...}) 
+//
+// construct. 
+// each expression between case and => is a pattern
+// matched against the firt argument of match
+// patterns are checked one at a time, top-down
+var n = 1
+
+n match {
+  case 0 => "zero"
+  case 1 => "one"
+  case _ => "other"
+}
+
+// if all cases fail an exception is raised
+n match {
+  case 0 => "zero"
+} 
+
+
+// match and patterns allow one to write cleaner and more compact code
+def convert (n:Int) = 
+  n match { 
+   case 0 => "zero"
+   case 1 => "one"
+   case _ => "other"
+  }
+  
+// the bodies of the case statements can be any expression (in particular a block)
+// but, like in the the two branches of the if construct, they all have to be of 
+// same type  
+def p (n: Int) = 
+  n match {
+    case 0 => { 
+      print("You entered ")
+      println("zero")
+    } // type of this is Unit
+    case _ => {
+     print("You did not enter ")
+     println("zero")
+    } // type of this is Unit
+  }
+  
+// patterns can be complex and nested
+var v = (1, 2)
+
+v match {
+  case (0, 0) => "a"
+  case (0, _) => "b"
+  case (_, 0) => "c"
+}
+
+// bothZero returns true iff both of its arguments are 0
+// common (bad) coding style
+def bothZero (x1:Int, x2:Int) = {
+  if (x1 == 0) {
+    if (x2 == 0) 
+      true
+    else
+      false
+  }
+  else 
+    false
+}
+  
+// same method but using match 
+def bothZero (x1:Int, x2:Int) =
+  (x1, x2) match {
+    case (0, 0) => true
+    case _ => false
+  }
+
+
+// the input here is already a pair that can be pattern matched
+// directly
+def bz (p:(Int, Int)) =
+  p match {
+    case (0, 0) => true
+    case _ => false
+  }
+
+def and (p:(Boolean, Boolean)) =
+  p match {
+    case (true, y) => y
+    case (false, _) => false
+  }
+// the scope of a pattern variable in a case is the body of that case
+
+def and (p:(Boolean, Boolean)) =
+  p match {
+    case (true, y) => y
+    case (false, _) => y // y is undefined here
+  }
+
+
+// factorial with match
+def fact (n:Int):Int = 
+  n match {
+    case 0 => 1
+    case _ => n * fact(n - 1)
+  }
+  
+// the match construct builds expressions
+
+val r = (0 < 1, 1 == 1) match {
+         case (true, y) => y
+         case (false, _) => false
+        }
+

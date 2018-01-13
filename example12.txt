@@ -1,0 +1,281 @@
+versity of Iowa
+   
+   Instructor: Cesare Tinelli
+*/
+
+/* Scala examples seen in class */
+
+/* Testing with Scalacheck */
+
+// adds scalacheck package to the class path
+:cp /group/class/c_022/scalacheck.jar
+
+// at home replace the path above with the one that contains your copy of scalacheck.jar, e.g.:
+:cp /Users/tinelli/22/Fall13/Scala/scalacheck
+
+
+
+def conc[T](l1: List[T], l2: List[T]): List[T] =
+  l1 match {
+    case Nil => l2
+    case h ::t => h :: conc(t, l2)
+  }
+
+// Properties of the concatenation conc for integer lists
+
+// for all integer lists l1 and l2, 
+// 1) the size of conc(l1, l2) is the sum of the sizes of l1 and l2
+// 2) conc(l1, l2) and l1 have the same head
+// 3) the last element of conc(l1, l2) is the last element of l2 
+// 4) every element of l1 is in conc(l1, l2)
+// 5) every element of conc(l1, l2) is in l1 or in l2
+// 6) for all i from 0 to the size of l1, 
+//    the ith element of conc(l1, l2) equals the ith element of l1
+
+
+// Scala check has a methods called Prop.forAll that 
+// that takes a predicate ((x1:T1, ..., xn:Tn) => e) and 
+// constructs a corresponding property p
+// p.check  can then be used to test that the property holds. 
+
+import org.scalacheck.Prop._
+
+
+// NOTE: 'forAll' is not the same as the method 'forall'
+//       defined for Scala collections!
+
+// for all integer lists l1 and l2, 
+// the size of conc(l1, l2) is the sum of the sizes of l1 and l2
+val p1 = forAll { (l1: List[Int], l2: List[Int]) =>
+  conc(l1, l2).size == l1.size + l2.size
+}
+
+p1.check
+
+// for all integer lists l1 and l2, 
+// conc(l1, l2) and l1 have the same head
+val p2 = forAll { (l1: List[Int], l2: List[Int]) =>
+  conc(l1, l2).head == l1.head
+}
+
+// for all integer lists l1 and l2, 
+// if l1 is non-empty, then conc(l1, l2) and l1 have the same head
+val p2 = forAll { (l1: List[Int], l2: List[Int]) =>
+  (l1 != Nil)  ==>  (conc(l1, l2).head == l1.head)
+}
+
+p2.check
+
+// you can understand   (e1 ==> e2)  as syntactic sugar for
+// (if e1 then e2 else true)
+// or, equivalently, for 
+// (!e1 || e2)
+
+
+// for all integer lists l1 and l2, 
+// the last element of conc(l1, l2) is the last element of l2
+val p3 = forAll { (l1: List[Int], l2: List[Int]) =>
+  conc(l1, l2).last == l2.last 
+}
+
+p3.check
+
+
+// for all integer lists l1 and l2, 
+// the last element of conc(l1, l2) is the last element of l2
+val p3 = forAll { (l1: List[Int], l2: List[Int]) =>
+  (l1 != Nil) ==> (conc(l1, l2).last == l2.last)
+}
+
+p3.check
+
+
+// for all integer lists l1 and l2, 
+// the last element of conc(l1, l2) is the last element of l2
+val p3 = forAll { (l1: List[Int], l2: List[Int]) =>
+  (l2 != Nil) ==> (conc(l1, l2).last == l2.last)
+}
+
+p3.check
+
+
+// for all integer lists l1 and l2, 
+// every element of l1 is in conc(l1, l2)
+val p4 = forAll { (l1: List[Int], l2: List[Int]) =>
+  forAll { (n: Int) =>
+    (l1 contains n) ==> (conc(l1, l2) contains n)
+  }
+}
+
+p4.check
+
+// more compact formulation
+val p4 = forAll { (l1: List[Int], l2: List[Int], n: Int) =>
+  (l1 contains n) ==> (conc(l1, l2) contains n)
+}
+
+
+val p4 = forAll { (l1: List[Int], l2: List[Int], n: Int) =>
+  (l1 contains n) == (conc(l1, l2) contains n)
+}
+
+p4.check
+
+// for all integer lists l1 and l2, 
+// every element of conc(l1, l2) is in l1 or in l2
+
+val p5 = forAll { (l1: List[Int], l2: List[Int], x: Int) =>
+    (conc(l1, l2) contains x) ==> ((l1 contains x) || (l2 contains x))
+  }
+}
+
+p5.check
+
+// for all integer lists l1 and l2, 
+// for all i from 0 to the size of l1, 
+// the ith element of conc(l1, l2) equals the ith element of l1
+val p6 = forAll { (l1: List[Int], l2: List[Int], i: Int) => 
+  (0 <= i && i < l1.size) ==> (conc(l1, l2)(i) == l1(i))
+}
+
+// intermediate variables can be used for readability, as usual
+val p6 = forAll { (l1: List[Int], l2: List[Int], i: Int) => {
+    val l = conc(l1, l2)  
+    (0 <= i && i < l1.size) ==> (l(i) == l1(i))
+  }
+}
+
+
+// several properties can be put together (conjunctively) using 'all'
+// 'all' takes in one or more properties separated by commas
+val p = forAll { (l1: List[Int], l2: List[Int]) => {
+  val l = conc(l1, l2)
+  all(
+    l.size == l1.size + l2.size,
+    (l1 != Nil) ==> (l.head == l1.head),
+    (l2 != Nil) ==> (l.last == l2.last),
+    forAll {(n: Int) => (l1 contains n) ==> (l contains n)},
+    forAll {(n: Int) => (l contains n) ==> ((l1 contains n) || (l2 contains n))}
+    )
+  }
+}
+
+// Individual properties can be given a name within 'all'
+val p = forAll { (l1: List[Int], l2: List[Int]) => {
+  val l = conc(l1, l2)
+  all(
+    "size" |: l.size == l1.size + l2.size,
+    "head" |: (l1 != Nil) ==> (l.head == l1.head),
+    "last" |: (l2 != Nil) ==> (l.last == l2.last),
+    "contains1" |: forAll {(n: Int) => (l1 contains n) ==> (l contains n)},
+    "contains2" |: forAll {(n: Int) => (l contains n) ==> ((l1 contains n) || (l2 contains n))}
+    )
+  }
+}
+
+// Given a positive integer, sum(n) computes the sum 
+// of all values from 1 to n
+def sum(n: Int): Int = {
+  var i = n
+  var s = 0
+  while (i > 0) {
+    s = s + i
+    i = i - 1
+  }
+  s
+}
+
+val sumProps = forAll { (n: Int) =>
+  all(
+    "base case" |: (n == 1)  ==>  (sum(n) == 1),
+    "step case" |: (n > 1)  ==>  (sum(n) == n + sum(n - 1))
+    )
+}
+
+sumProps.check
+
+
+
+
+def avg(m: Int, n: Int) = (m + n) / 2 
+
+avgProps.check
+
+
+val avgProps = forAll { (m: Int, n: Int) => {
+  val a = avg(m, n)
+  all(
+   "avg >= min" |: (a >= math.min(m, n)),
+   "avg >= max" |: (a <= math.max(m, n)),
+   "avg <= sum" |: (a <= m + n)
+   )
+  }
+}
+
+avgProps.check
+
+val avgProps = forAll { (m: Int, n: Int) => {
+  val a = avg(m, n)
+  (m >= 0 && n >= 0) ==> 
+  all(
+   "avg >= min" |: (a >= math.min(m, n)),
+   "avg >= max" |: (a <= math.max(m, n)),
+   "avg <= sum" |: (a <= m + n)
+   )
+  }
+}
+
+avgProps.check
+
+
+def avg(m: Double, n: Double) = (m + n) / 2 
+
+val fpAvgProps = forAll { (m: Double, n: Double) => {
+  val a = avg(m, n)
+  (m >= 0 && n >= 0) ==> 
+  all(
+   "avg >= min" |: (a >= math.min(m, n)),
+   "avg >= max" |: (a <= math.max(m, n)),
+   "avg <= sum" |: (a <= m + n)
+   )
+  }
+}
+
+fpAvgProps.check
+
+
+def rev[T](l: List[T]): List[T] = 
+  l match {
+    case Nil => Nil
+    case h :: t => rev(t) ++ List(h)
+  }
+
+// case h1 :: h2 :: t if h1 == h2 => rev(h2 :: t) 
+
+
+
+val revProps = forAll { (l: List[Int]) => {
+  val rl = rev(l)
+  all(
+    // all elements of l are in rev(l)
+    "p1" |: forAll { (n: Int) =>  (l contains n) ==> (rl contains n) },
+    // all elements of rev(l) are in l
+    "p2" |: forAll { (n: Int) =>  (rl contains n) ==> (l contains n) },
+    // l and rev(l) have exactly the same set of elements [equivalent to (p1 and p2)]
+    "p3" |: l.toSet == rl.toSet,
+    // reversing rev(l) gives you back l
+    "p4" |: rev(rl) == l,
+    // l and rev(l) have the same length
+    "p5" |: l.length == rl.length,
+    // for each position i of l, the element occurs at position i in l
+    // iff it occurs at position (l.length - 1 - i) in rl
+    "p6" |: forAll { (i: Int) => 
+              (0 <= i && i < l.length) ==> (l(i) == rl(l.length - 1 - i)) 
+            }
+    )
+  }
+}
+
+revProps.check
+
+  

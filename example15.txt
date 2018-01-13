@@ -1,0 +1,286 @@
+versity of Iowa
+   
+   Instructor: Cesare Tinelli
+*/
+
+/* Scala examples seen in class */
+
+/* Adapted from
+ 
+   - Programming in Scala, Second Edition
+   - by Martin Odersky, Lex Spoon, and Bill Venners.
+   - Artima, 2010. 
+
+   - Actors in Scala
+     by Philipp Haller and Frank Sommers
+     Artima, 2010
+*/
+
+
+/* Actors */
+
+// In Scala 2.9 actors are defined in the scala.actors library
+import scala.actors._
+        
+class SillyActor extends Actor {
+  // every subclass of actor should define method act
+  // defining the main behavior of the actor
+  def act {
+    for (i <- 1 to 5) {
+      println("I'm acting!")
+      Thread.sleep(2000) // go to sleep for 2000 milliseconds
+    }
+  }
+}
+
+val sillyActor1 = new SillyActor
+
+// predefined method start activates the actor and calls method act
+sillyActor1.start
+
+
+
+class SeriousActor extends Actor {
+  def act() {
+    for (i <- 1 to 5) {
+      println("To be or not to be.")
+      Thread.sleep(1000)
+    }
+  }
+}
+
+val seriousActor1 = new SeriousActor
+val sillyActor2 = new SillyActor
+
+// once started the two actors will execut concurrently
+seriousActor1.start; sillyActor2.start
+
+
+
+import scala.actors.Actor._
+
+
+// simplified syntax defining an object of class actor         
+val seriousActor2 = actor {
+  // this code here effectively becomes the body
+  // of the actors's act method
+  for (i <- 1 to 5)
+    println("That is the question.")
+    Thread.sleep(1000)
+}
+
+
+// the following expression send the message "hi there" 
+// to silly actor asynchronously (that is, execution continues
+// immediately after the message has been sent, without waiting
+// for the actor to be done processing the message
+// each actor has an associated "mailbox".
+// all messages sent to the actor are stored there
+//  
+sillyActor2 ! "hi there"
+
+
+// receive can be used to process incoming messages i.e., by fetching one
+// message from the actor's mailbox).
+// the actor suspends on extecuting receive if the mailbox is empty
+// and resumes executiong only once a message is sent to it 
+// the body of receive is a list of case expressions exactly as in the
+// match expression 
+val echoActor = actor {
+  while (true) {
+    // keep fething incoming messages 
+    receive {
+      case msg => {
+        println
+        println("received message: "+ msg)
+      }
+    }
+  } 
+}
+
+// any Scala value can be used as a message
+echoActor ! "hi there"
+
+echoActor ! 15
+
+echoActor ! (1, "abc")
+
+echoActor ! 1::2::3::Nil
+
+// this actor fetches only integer messages from the mailbox,
+// any non-integer messages are silently discarded
+val intActor = actor {
+  while (true) {
+    receive {
+      case x: Int => // I only want Ints
+        println("Got an Int: "+ x)
+    } 
+}
+
+intActor ! 15
+
+intActor ! (1, "abc") // discarded
+
+intActor ! 1::2::3::Nil // discarded
+
+
+val impatientActor = actor {
+  while (true) {
+    // receiveWithin is like receive except that it generates 
+    // a timeout exception if no message is received within two seconds.
+    receiveWithin(2000) {
+      case "stop!" => exit()
+      case msg => {
+        println
+        println("received message: "+ msg)
+      }
+    }
+  } 
+}
+
+
+impatientActor ! "hi there"
+
+impatientActor ! "stop!"
+
+
+
+val impatientActor = actor {
+  // timeout counter
+  var to = 5;
+  while (true) {
+    receiveWithin(3000) {
+      // timeouts are in fact selfgenerate messages that can be processes
+      // by receiveWithin itself
+      case TIMEOUT => { // 3 seconds passed within any external messages
+        if (to == 0) {
+         // the actor dies if the timeout counter is 0
+         println
+         println("Quitting")
+         exit()
+        }
+        else {
+         // decrements the time out
+         println
+         println("Waiting ..." + to)
+         to = to - 1
+        }
+      }
+     case msg => { // an external message 
+     	to = 5
+        println
+        println("received message: "+ msg)
+      }
+    }
+  } 
+}
+
+impatientActor ! "Hi"
+
+
+
+
+case class User(name: String)
+case class Subscribe(user: User)
+case class Unsubscribe(user: User)
+case class Post(msg: String)
+case class UserPost(user: User, post: Post)
+
+
+val user1 = User("Jane")
+val user2 = User("Mike")
+
+val User(name1) = user1
+
+val request1 = Subscribe(user1)
+
+ 
+val chatRoom = actor {
+  while (true) {
+    receive {
+      case Subscribe(user) => {
+        val User(name) = user
+        println("I'm adding user " + name)
+        Thread.sleep(4000)
+        println("User " + name + " added")
+      }
+      case Unsubscribe(User(name)) => {
+        println("I'm removing user " + name)
+        Thread.sleep(4000)
+        println("User " + name + " removed")
+      }
+      case UserPost(User(name), Post(content)) => {
+        println("I'm posting" + name + "'s post: " + content)
+        Thread.sleep(4000)
+        println("Done posting " + name + "'s post")
+      }
+    } 
+  }
+}
+
+
+chatRoom ! Subscribe(user1)
+chatRoom ! Subscribe(user2)
+chatRoom ! Unsubscribe(user2)
+chatRoom ! UserPost(user1, Post("Hi all"))
+
+
+
+case object Ping
+case object Pong
+case object Stop
+
+class PingActor(count: Int, pongActor: Actor) extends Actor {
+  def act() {
+    var pingsLeft = count - 1
+    // sends initial Ping message to pongActor
+    pongActor ! Ping
+    while (true) {
+      receive {
+        case Pong => {
+          if (pingsLeft % 1000 == 0)
+            println("Ping: pong")
+          if (pingsLeft > 0) {
+            pongActor ! Ping
+            pingsLeft -= 1
+          } else {
+            println("Ping: stop")
+            pongActor ! Stop
+            exit()
+          }
+        }
+      }
+    }
+  }
+}
+
+class PongActor extends Actor {
+  def act() {
+    var pongCount = 0
+    while (true) {
+      receive {
+        case Ping => {
+          if (pongCount % 1000 == 0)
+            println("Pong: ping " + pongCount)
+          // sender is predefined to be the sender of this messages
+          sender ! Pong
+          pongCount = pongCount + 1
+        }
+        case Stop => {
+          println("Pong: stop")
+          exit()
+        }
+      }
+    }
+  }
+}
+
+
+val pong = new PongActor
+val ping = new PingActor(100000, pong)
+
+ping.start; pong.start
+
+
+  
+

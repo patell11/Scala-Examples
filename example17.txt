@@ -1,0 +1,198 @@
+versity of Iowa
+   
+   Instructor: Cesare Tinelli
+*/
+
+/* Scala examples seen in class */
+
+// Traits
+
+// Traits are a handy mechanism to factor out common features 
+// from classes that have nothing to do with each other conceptually
+// (and so do not have a suitable common superclass---other than Any)
+
+
+/* 
+Recall our domain design problem
+
+The proposed solution had these classes and inheritance structure
+
+Classes: Animal, Egg-laying, Domesticated, Mammal, Reptile, Bird, 
+         Cow, Sheep, Deer, Crocodile, Parrot, Platipus, Viper
+
+Inheritance structure: (< means subclass)
+
+Mammal < Animal
+
+Cow < Mammal
+Sheep < Mammal
+Deer < Mammal
+Platipus < Mammal
+
+Cow < Domesticated
+Sheep < Domesticated
+
+Bird < Animal
+
+Bird < Egg-laying
+
+Parrot < Bird
+
+Reptile < Animal
+
+Crocodile < Reptile
+Viper < Reptile
+
+Crocodile < Egg-laying
+Platipus < Egg-laying
+
+*/
+
+// The model above uses multiple inheritance
+// modeling that directly in Scala is not possible
+// because Scala provides only single inheritance
+// So we can at most capture the taxonomical information 
+// below, but not the information about which animals 
+// lay eggs and which are domesticated
+
+class Animal 
+
+class Mammal extends Animal
+
+class Cow extends Mammal
+class Sheep extends Mammal
+class Deer extends Mammal
+class Platipus extends Mammal
+
+class Reptile extends Animal
+
+class Crocodile extends Reptile
+class Viper extends Reptile
+
+class Bird extends Animal
+
+class Parrot extends Bird
+
+
+class Human extends Animal
+
+
+// To capture the notion of domesticated and egg-laying, however, 
+// we can use Scala's traits
+
+// a trait is a collection of "features" (fields and methods)
+
+// The Domesticated trait includes, for instance, the 'owner' field
+trait Domesticated {
+	var owner: Option[Human] = None
+
+	def changeOwner(o: Human) =
+	  owner = Some(o)
+}
+
+// Cow is a subclass of Mammal with the Domesticated trait
+class Cow extends Mammal with Domesticated
+
+// Cow is a subclass of Mammal with the Domesticated trait
+class Sheep extends Mammal with Domesticated
+
+
+// The EggLaying trait includes, for instance, the 'incubationTime' field
+trait EggLaying {
+  var incubationTime = 10
+}
+
+// All birds have the EggLaying trait
+class Bird extends Animal with EggLaying
+
+// Some mammals and some reptiles have the EggLaying trait too
+class Platipus extends Mammal with EggLaying
+class Crocodile extends Animal with EggLaying
+
+
+
+
+/* Examples below adapted from Programming in Scala, Second Edition
+   by Martin Odersky, Lex Spoon, and Bill Venners.
+   Artima, 2010. 
+*/
+
+// Domain: figures on a grid
+class Point(val x: Int, val y: Int)
+
+abstract class GridFigure
+
+class Rectangle(var topLeft: Point, var bottomRight: Point) extends GeometricFigure {
+	def height = topLeft.y - bottomRight.y
+	def width = bottomRight.x - topLeft.x
+  
+	def area = height * width 
+	// ...
+}
+
+
+// Domain: GUIs
+abstract class GUIWidget
+	
+abstract class RectangularWidget extends GUIWidget {
+  var topLeft: Point
+  var bottomRight: Point
+
+  def height = topLeft.y - bottomRight.y
+  def width = bottomRight.x - topLeft.x
+  
+  var backgroundColor: (Int, Int, Int) // RBG value
+  // ...
+}
+
+
+// The classes Rectangle and RectangularWidget belong to completely different
+// application domains (grid geometry and GUIs) so have nothing to do with each 
+// other. However, they have similar features for being both rectangular things:
+// they are both defined by two points and have a notion of height and width that
+// are defined in the same way in terms of their defining points
+// These common "rectangular" features, can be factored out in a Scala trait
+
+trait Rectangular {
+ var topLeft: Point
+ var bottomRight: Point
+ 
+ def height = topLeft.y - bottomRight.y
+ def width = bottomRight.x - topLeft.x
+}
+
+
+// now the definition of Rectangle and RectangularWidget do not need 
+// to contain explicitly the topLeft, bottomRight, height, and width
+// features if they are defined as having the Rectangular trait
+
+
+class Rectangle(var topLeft: Point, var bottomRight: Point
+               ) extends GridFigure with Rectangular {
+    def area = height * width 
+    // ...
+}
+
+
+abstract class RectangularWidget extends GUIWidget with Rectangular {
+  var backgroundColor: (Int,Int,Int) // RBG value
+  // ...
+}
+
+class Pane(var topLeft: Point, var bottomRight: Point) extends RectangularWidget {
+	var title = ""
+	var backgroundColor = (0,0,0)
+}
+
+val r = new Rectangle(new Point(1, 13), new Point(10, 2))
+
+r.height
+
+r.width
+
+
+val p = new Pane(new Point(1, 13), new Point(10, 2))
+
+p.height
+
+p.width

@@ -1,0 +1,586 @@
+versity of Iowa
+   
+   Instructor: Cesare Tinelli
+*/
+
+/* Scala examples seen in class */
+
+/* Function values and higher-order methods */
+
+// method definition
+def m(x:Int) = x + 1
+
+// function definition
+val f = (x:Int) => x + 1 
+
+// functions are values 
+// the immutable variable f above is given the value   (x:Int) => x + 1
+
+(x:Int) => x + 1 // is a function that 
+// takes an integer value x and returns the value x+1
+
+
+// since functions are values, they can be used like any other value
+
+// they can be evaluated
+(x:Int) => x + x
+
+f
+
+// assigned to immutable variables
+val g = (x:Int) =>  2 * x
+
+// assigned to mutable variables
+var f1 = f
+
+f1 = g
+
+// stored into a pair
+
+val p = (f,g)
+
+// or in a list
+val l = List(f,g)
+
+
+// but they can also applied to arguments, like methods
+
+f(4)
+
+((x:Int) => x + 1)(4)
+
+l.head(6)  // l.head is the same as f
+
+p._2(6) // p._2 is the same as g
+
+
+// methods are *not* values 
+def m(x:Int) = x + 1 
+
+:type m
+
+:type f
+
+// methods cannot be evaluated, only applied
+m  // gives an error
+
+m(4)  // OK
+
+// However, methods can be easily converted into functions:
+(y:Int) => m(y)
+
+
+// the whole expression above can be abbreviated as
+m(_)
+
+val fm = m(_)
+
+
+// like methods functions can have more than one argument
+(x:Int, y:String) => x + y
+
+// the function above has type (Int, String) => String .  
+// It takes an integer and a string, and returns a String
+
+// binary method
+def m2(x:Int, y:Int) = x + y
+
+// binary methods can be converted into functions too:
+val fm2 = m(_, _)
+
+
+
+
+/* Higher-order functions */
+
+// functions can be constructed and returned by other functions/methods
+
+// make_add takes an integer n and returns a function that stores n internally
+// this function in turn takes an integer x and returns x+n
+def make_add(n:Int) =  (x:Int) => x + n
+
+val inc = make_add(1)
+
+inc(40)
+
+// add6 is a unary function that returns the result of adding 6 to its input
+val add6 = make_add(6)
+
+add6(8)
+
+// make_add is in effect a function factory, it can used to generate any offset
+// function
+val add10 = make_add(10)
+
+
+
+// functions can be passed as input to other functions or methods
+// applyTwice takes a function f from integers to integers plus an integer x,
+// and returns the result of applying f twice to x
+def applyTwice(f:(Int) => Int, x:Int) = f(f(x))
+
+
+// returns the result of applying add1 twice to 3, that is, 3+1+1
+applyTwice(inc, 3)
+
+// returns the result of applying the input function to 3, that is, (3*3)*(3*3)
+applyTwice((x:Int) => x*x, 3)
+
+
+/* generating functions by partial application */
+
+// the effect of make_add can be obtained by applying + partially
+val add4 = (_:Int) + 4
+
+// (_:Int) + 4   abbreviates 
+(x:Int) => x + 4
+
+// the use of underscore for partial application can be generalized
+val add2 = applyTwice(add1, _:Int)
+
+// the value of add2 is equivalent to 
+(y:Int) => applyTwice(add1, y)
+
+// which in turn is equivalent to
+(y:Int) => add1(add1(y))
+
+
+
+// default way to create a binary function
+val sub = (x:Int, y:Int) => x - y 
+
+sub(4,6)
+
+// abbreviated way
+val sub = (_:Int) - (_:Int) 
+
+// Note: each occurrence of _ stands for a different input:
+
+// (_:Int) - (_:Int)  stands for 
+(x:Int, y:Int) => x - y
+
+sub(4, 6)
+
+
+// functions/methods that take a function as input or return a function as output
+// are called higher/order
+//
+// higher-order functions/methods allow us to capture common programming patterns
+// into a generic function factory
+
+def incrementAll( l:List[Int] ): List[Int] =
+  l match {
+    case Nil => Nil
+    case x :: t => (x+1) :: incrementAll(t)
+  }
+  
+def squareAll( l:List[Int] ): List[Int] =
+  l match {
+    case Nil => Nil
+    case x :: t => (x*x) :: squareAll(t)
+  }
+  
+def doubleAll( l:List[Int] ): List[Int] =
+  l match {
+    case Nil => Nil
+    case x :: t => (2*x) :: doubleAll(t)
+  }
+  
+def negateAll( l:List[Int] ): List[Int] =
+  l match {
+    case Nil => Nil
+    case x :: t => (-x) :: negateAll(t)
+  }
+  
+// all the functions above do the same thing:
+// they apply some function f from integers to integers to each element
+// of the input list and collect the results in the output list
+
+val l123 = List(1,2,3)
+
+incrementAll(l123)  // f is the successor function
+squareAll(l123)     // f is the squaring function
+doubleAll(l123)     // f is the doubling function
+negateAll(l123)     // f is the negation function
+
+// we can capture this pattern in a higher-order method that takes 
+// f explicitly as input
+
+def map( f:(Int) => Int, l:List[Int] ): List[Int] =
+  l match {
+    case Nil => Nil
+    case x :: t => f(x) :: map(f,t)
+  }
+  
+// then, the effect of incrementAll is achieved by instantiating f with add1
+map(add1, l123)
+
+// equivalently
+
+map(_ + 1, l123)
+
+// Same for the others
+
+map((x:Int) => x * x, l123) // like squareAll
+map(2 * _, l123)            // like doubleAll
+map(-_, l123)               // like negateAll
+
+
+// Note: in some cases when functions are passed as actual parameters
+// we can use a more coincise notation for them. Example:
+
+map(x => x * x, l123) // like squareAll
+
+
+// of course, we can pass any function of type  (Int) => Int  to map
+
+val map(make_add(3), l123)
+
+map(_ + 10, l123)
+
+map(5 * _, l123)
+
+// in fact, we an also partially apply map and redefine 
+// incrementAll, squareAll, doubleAll, negateAll as functions as follows
+
+val incrementAll = map(_ + 1,  _:List[Int])
+val squareAll = map(x => x*x,  _:List[Int])
+val doubleAll = map(2 * _,  _:List[Int])
+val negateAll = map(-_,  _:List[Int])
+
+incrementAll(l123)
+squareAll(l123)
+doubleAll(l123)
+negateAll(l123)
+
+
+List((1,2), (3,5), (3,3)) 
+
+List(3, 8, 6)
+
+
+/* Predefined map method */
+
+// The following method is another example of a function similar to incrementAll etc.
+
+def listAddTogether(l:List[(Int,Int)]):List[Int] =
+  l match {
+   case Nil => Nil
+   case (x, y) :: t => (x + y) :: listAddTogether(t)
+  }
+  
+// addTogether cannot be implemented as an instance of the map function above
+// because its input is not a list of integers.
+// However, we can make our map more general by type parametrization
+
+def map( f:(Int) => Int, l:List[Int] ): List[Int] =
+  l match {
+    case Nil => Nil
+    case x :: t => f(x) :: map(f, t)
+  }
+
+// for any types S and T, map[S,T] takes a function from S to T and
+// a list l of Ss, and returns a list of Ts obtained by applying f 
+// to each element of l 
+def map[S,T] ( f:(S) => T, l:List[S] ): List[T] =
+  l match {
+    case Nil => Nil
+    case x :: t => f(x) :: map(f, t)
+  }
+
+
+val addTogether = (p:(Int,Int)) => {
+  val (x, y) = p
+  x + y
+}
+
+val listAddTogether = map(addTogether, _:List[(Int, Int)])
+
+listAddTogether( List((1,2), (3,5), (3,3)) )
+
+
+// The List class has a predefined map method like the above.
+
+// Object of type List[Int], 
+// input function of type (List[Int]) => Int,
+// result of type List[Int]
+l123.map(_ + 10) 
+
+// Object of type List[Int],
+// input function of type (List[Int]) => Float,
+// result of type List[Float]
+l123.map(_.toFloat)
+
+// Object of type List[String],
+// input function of type (List[Int]) => String,
+// result of type List[String]
+List("a", "b", "c").map(_ ++ " ")
+
+// Object of type List[String],
+// input function of type (List[String]) => String,
+// result of type List[String]
+List("a", "b", "c").map(_.capitalize) 
+
+
+// Object of type List[String], 
+// input function of type (List[String]) => String,
+// result of type List[String]
+List("a", "b", "c").map(x => x ++ x)
+
+
+// Object of type List[(Int,Int)],
+// input function of type (List[Int,Int]) => Int
+// result of type List[Int]
+List((1,4), (3,4), (2,6)).map(p => p._1 + p._2)
+
+
+// Note: map is defined for others collection classes besides lists,
+// such as Arrays, Sets and so on
+
+Array(1,2,3).map(add1)
+Set(1,2,3).map(add1)
+Vector(1,2,3).map(add1)
+
+
+/* More higher-order functions on lists */
+
+
+/* filter */
+
+// filter(p,l) return a list of all the elements x of l 
+// such that p(x) is true. Equivalently, it filters out all
+// the elements of l that falsify p
+def filter( p:(Int) => Boolean, l:List[Int] ): List[Int] =
+  l match {
+    case Nil => Nil
+    case x :: t => if (p(x)) x :: filter(p,t) else filter(p,t)
+  }
+
+// filters out list elements not greater than 1
+filter(_ > 1, List(0,1,2,3,4))
+  
+val isEven = (_:Int) % 2 == 0
+
+// filters out all odd numbers in the list
+filter(isEven, List(0,1,2,3,4))
+
+// like map, filter can be made generic
+def filter[T]( p:(T) => Boolean, l:List[T] ): List[T] =
+  l match {
+    case Nil => Nil
+    case x :: t => if (p(x)) x :: filter(p,t) else filter(p,t)
+  }
+
+
+
+// List types have a predefind generic filter method
+
+// filters out all strings in the list coming before c in alphabetical order
+List("a","c", "d", "b","s").filter(_ >= "c")
+
+// filters out all 2's in the list
+l123.filter(_ != 2)
+
+
+/* sortWith */
+
+// the sortWith method of List takes a comparison function over the list elements
+// and sorts the list according to that
+// More precisely, for any type T, 
+// if l is of type List[T], and comp is of type (T,T) => Boolean,
+// l.sortWith(comp) produces a new list, consisting of
+// the elements of l sorted accoding to comp
+
+// list elements get sorted in decreasing order
+List(11,2,6,5,6,9,10).sortWith(_ > _)
+
+// list elements get sorted in increasing order
+List(11,2,6,5,6,9,10).sortWith(_ < _)
+
+// list elements get sorted so that all even numbers are before odd ones
+List(11,2,6,5,6,9,10).sortWith((x,y) => x % 2 == 0)
+
+val l = List((1,4),(3,4),(2,7),(2,6))
+
+// list pairs get sorted in increasing lexicographic order
+l.sortWith( (p, q) => (p._1 < q._1)  ||  (p._1 == q._1) && (p._2 < q._2) )
+
+// list elements get sorted so that "Iowa" is before anything else
+List("Illinois","Indiana", "Iowa", "Nebraska").sortWith((x,y) => x == "Iowa")
+
+
+/* foreach */
+
+// For any type T, 
+// if l is of type List[T], and p is of type (T) => Unit,
+// l.foreach(p) executes p on each element of l
+
+// prints each element of the list
+List(11,2,6,5,6,9,10).foreach(println(_))
+
+// prints a string of the form  "element = i" for each element i in the list
+List(11,2,6,5,6,9,10).foreach(x => println("element = " + x))
+
+var sum = 0 
+// adds up all the element of the list into sum
+List(11,2,6,5,6,9,10).foreach(x => sum = sum + x)
+
+sum
+
+// sample use of foreach in method
+def addAll(xs:List[Int]) = {
+  var sum = 0
+  xs.foreach(x => sum = sum + x)
+  sum
+}
+
+// Note: the "for" construct can be seen as syntactic sugar for foreach
+// e.g.,
+for (p <- l) println(p)
+
+// is the same as
+l.foreach(p => println(p))
+
+
+for ((i,j) <- l) println(i+j)
+// is the same as
+l.foreach(p => {val (i,j) = p; println(i+j)})
+
+
+
+
+/* more higher-order functions */
+
+def compose (f:(Int) => Int, g:(Int) => Int) =  (x:Int) => f(g(x))
+
+val add1 = (_:Int) + 1
+val square = (x:Int) => x*x
+
+val f = compose(add1,square)
+f(3)
+
+
+def twice(f:(Int) => Int) = compose(f,f)
+
+val add2 = twice(add1)
+
+add2(3)
+
+
+def flip(f:(Int,Int) => Int) =  (x:Int,y:Int) => f(y,x)
+
+val fminus = flip(_ - _)
+
+fminus(5,3)
+
+
+def all(p:(Int) => Boolean, l:List[Int]):Boolean =    
+  l match {
+    case Nil => true
+    case h :: t => p(h) && all(p,t)
+  }
+  
+  
+all(_ > 0, List(1,2,3))
+all(_ > 0, List(1,0,3))
+
+all(isEven, List(1,2,3))
+
+
+val allPositive = all(_ > 0, _:List[Int])
+
+allPositive(List(1,2,3))
+
+
+// partition(p,l) return a pair of two lists: 
+// the first with all the elements of l that satisfy p
+// the second with the other elements of l
+def partition(p:(Int) => Boolean, l:List[Int]):(List[Int],List[Int]) =
+    l match {
+      case Nil => (Nil,Nil)
+      case h :: t => {
+        val (l1,l2) = partition(p,t)
+        if (p(h)) (h :: l1, l2) else (l1, h :: l2)
+      }
+    }
+}
+
+
+
+
+  
+/* Generic, higher-order classes */
+
+// Classes can be both generic and have constructors that take functions as input
+
+
+// The sorted queue class below is parametrized both by the type
+// of its elements and a comparison function over them
+
+// the queue is stored in a list sorted wrt better
+class SortedQueue[T](better:(T,T) => Boolean) {
+  // invariants:
+  // - q is initially empty
+  // - q is maintained sorted according to better, that is,
+  //   for all positions i,j in q with i < j,   better(q(i), q(j)) holds
+  //   before and after calling a public method
+  // - when q is non-empty, its head contains the best element of q wrt better
+  private var q = List[T]()
+  
+  // preconditions: 
+  // - l is sorted by better
+  // postconditions: 
+  // - the returned list consists of x plus the elements of l
+  // - the returned list is sorted wrt better
+  private def insert(x:T, l:List[T]):List[T] =
+    l match {
+      case Nil => x :: Nil
+      case h :: t => 
+        if (better(x,h))
+          x :: l
+        else
+          h :: insert(x,t)
+    }
+    
+   def enqueue(x:T) =
+     q = insert(x,q)
+  
+  // preconditions: 
+  // - q is non-empty
+  def dequeue = {
+    val (h :: t) = q
+    q = t
+    h
+  }
+  
+  // postconditions:
+  // - returns true iff q is empty
+  def isEmpty = 
+    q == Nil
+}
+
+// creates a sorted queue of integers ordered by > (bigger is better)
+val p = new SortedQueue[Int](_ > _)
+
+p.enqueue(1)
+p.enqueue(10)
+p.enqueue(4)
+p.dequeue
+
+// creates a sorted queue of integers ordered by < (smaller is better)
+val p = new SortedQueue[Int](_ < _)
+p.enqueue(1)
+p.enqueue(10)
+p.enqueue(4)
+p.dequeue
+
+
+// creates a sorted queue of pairs of integer/string pairs ordered by < 
+// the integer component, (smaller integer component is better)
+val p = new SortedQueue[(Int,String)]( 
+ (a:(Int,String), b:(Int,String)) => a._1 < b._1
+)
+p.enqueue((3,"apples"))
+p.enqueue((1,"pears"))
+p.enqueue((4,"melons"))
+p.dequeue
