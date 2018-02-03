@@ -451,3 +451,5 @@ val r = (0 < 1, 1 == 1) match {
          case (false, _) => false
         }
 
+--------
+eaxmple2 test 1
